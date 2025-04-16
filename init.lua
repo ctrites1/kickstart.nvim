@@ -399,75 +399,29 @@ require('lazy').setup({
       'hrsh7th/cmp-nvim-lsp',
     },
     config = function()
-      -- Brief aside: **What is LSP?**
-      --
-      -- LSP is an initialism you've probably heard, but might not understand what it is.
-      --
-      -- LSP stands for Language Server Protocol. It's a protocol that helps editors
-      -- and language tooling communicate in a standardized fashion.
-      --
-      -- In general, you have a "server" which is some tool built to understand a particular
-      -- language (such as `gopls`, `lua_ls`, `rust_analyzer`, etc.). These Language Servers
-      -- (sometimes called LSP servers, but that's kind of like ATM Machine) are standalone
-      -- processes that communicate with some "client" - in this case, Neovim!
-      --
-      -- LSP provides Neovim with features like:
-      --  - Go to definition
-      --  - Find references
-      --  - Autocompletion
-      --  - Symbol Search
-      --  - and more!
-      --
-      -- Thus, Language Servers are external tools that must be installed separately from
-      -- Neovim. This is where `mason` and related plugins come into play.
-      --
-      -- If you're wondering about lsp vs treesitter, you can check out the wonderfully
-      -- and elegantly composed help section, `:help lsp-vs-treesitter`
-
-      --  This function gets run when an LSP attaches to a particular buffer.
-      --    That is to say, every time a new file is opened that is associated with
-      --    an lsp (for example, opening `main.rs` is associated with `rust_analyzer`) this
-      --    function will be executed to configure the current buffer
       vim.api.nvim_create_autocmd('LspAttach', {
         group = vim.api.nvim_create_augroup('kickstart-lsp-attach', { clear = true }),
         callback = function(event)
           -- NOTE: Remember that Lua is a real programming language, and as such it is possible
           -- to define small helper and utility functions so you don't have to repeat yourself.
           --
-          -- In this case, we create a function that lets us more easily define mappings specific
-          -- for LSP related items. It sets the mode, buffer and description for us each time.
           local map = function(keys, func, desc, mode)
             mode = mode or 'n'
             vim.keymap.set(mode, keys, func, { buffer = event.buf, desc = 'LSP: ' .. desc })
           end
 
-          -- Jump to the definition of the word under your cursor.
-          --  This is where a variable was first declared, or where a function is defined, etc.
-          --  To jump back, press <C-t>.
           map('gd', require('telescope.builtin').lsp_definitions, '[G]oto [D]efinition')
 
-          -- Find references for the word under your cursor.
           map('gr', require('telescope.builtin').lsp_references, '[G]oto [R]eferences')
 
-          -- Jump to the implementation of the word under your cursor.
-          --  Useful when your language has ways of declaring types without an actual implementation.
           map('gI', require('telescope.builtin').lsp_implementations, '[G]oto [I]mplementation')
 
-          -- Jump to the type of the word under your cursor.
-          --  Useful when you're not sure what type a variable is and you want to see
-          --  the definition of its *type*, not where it was *defined*.
           map('<leader>D', require('telescope.builtin').lsp_type_definitions, 'Type [D]efinition')
 
-          -- Fuzzy find all the symbols in your current document.
-          --  Symbols are things like variables, functions, types, etc.
           map('<leader>ds', require('telescope.builtin').lsp_document_symbols, '[D]ocument [S]ymbols')
 
-          -- Fuzzy find all the symbols in your current workspace.
-          --  Similar to document symbols, except searches over your entire project.
           map('<leader>ws', require('telescope.builtin').lsp_dynamic_workspace_symbols, '[W]orkspace [S]ymbols')
 
-          -- Rename the variable under your cursor.
-          --  Most Language Servers support renaming across files, etc.
           map('<leader>rn', vim.lsp.buf.rename, '[R]e[n]ame')
 
           -- Execute a code action, usually your cursor needs to be on top of an error
@@ -536,8 +490,7 @@ require('lazy').setup({
       -- See :help vim.diagnostic.Opts
       vim.diagnostic.config {
         severity_sort = true,
-        float = { border = 'rounded', source = 'if_many' },
-        underline = { severity = vim.diagnostic.severity.ERROR },
+        underline = true,
         signs = vim.g.have_nerd_font and {
           text = {
             [vim.diagnostic.severity.ERROR] = '󰅚 ',
@@ -545,21 +498,58 @@ require('lazy').setup({
             [vim.diagnostic.severity.INFO] = '󰋽 ',
             [vim.diagnostic.severity.HINT] = '󰌶 ',
           },
-        } or {},
+        } or {
+          text = {
+            [vim.diagnostic.severity.ERROR] = 'E',
+            [vim.diagnostic.severity.WARN] = 'W',
+            [vim.diagnostic.severity.INFO] = 'I',
+            [vim.diagnostic.severity.HINT] = 'H',
+          },
+        },
         virtual_text = {
+          prefix = '●',
           source = 'if_many',
           spacing = 2,
+          severity = {
+            min = vim.diagnostic.severity.WARN,
+          },
           format = function(diagnostic)
-            local diagnostic_message = {
-              [vim.diagnostic.severity.ERROR] = diagnostic.message,
-              [vim.diagnostic.severity.WARN] = diagnostic.message,
-              [vim.diagnostic.severity.INFO] = diagnostic.message,
-              [vim.diagnostic.severity.HINT] = diagnostic.message,
-            }
-            return diagnostic_message[diagnostic.severity]
+            if diagnostic.severity == vim.diagnostic.severity.ERROR then
+              return string.format('ERROR: %s', diagnostic.message)
+            end
+            return diagnostic.message
           end,
         },
+        float = {
+          border = 'rounded',
+          source = 'always',
+          header = '',
+          prefix = '',
+        },
       }
+
+      vim.api.nvim_create_autocmd('FileType', {
+        pattern = 'html',
+        callback = function()
+          vim.diagnostic.config({
+            virtual_text = {
+              prefix = '●',
+              source = 'if_many',
+              severity = {
+                min = vim.diagnostic.severity.ERROR,
+              },
+            },
+            float = {
+              source = 'always',
+              border = 'rounded',
+            },
+            signs = true,
+            underline = true,
+            update_in_insert = false,
+            severity_sort = true,
+          }, vim.api.nvim_get_current_buf())
+        end,
+      })
 
       -- LSP servers and clients are able to communicate to each other what features they support.
       --  By default, Neovim doesn't support everything that is in the LSP specification.
@@ -592,9 +582,6 @@ require('lazy').setup({
         --
 
         lua_ls = {
-          -- cmd = { ... },
-          -- filetypes = { ... },
-          -- capabilities = {},
           settings = {
             Lua = {
               completion = {
@@ -605,24 +592,14 @@ require('lazy').setup({
             },
           },
         },
+        html = {},
       }
-
-      -- Ensure the servers and tools above are installed
-      --
-      -- To check the current status of installed tools and/or manually install
-      -- other tools, you can run
-      --    :Mason
-      --
-      -- You can press `g?` for help in this menu.
-      --
-      -- `mason` had to be setup earlier: to configure its options see the
-      -- `dependencies` table for `nvim-lspconfig` above.
-      --
-      -- You can add other tools here that you want Mason to install
-      -- for you, so that they are available from within Neovim.
       local ensure_installed = vim.tbl_keys(servers or {})
       vim.list_extend(ensure_installed, {
         'stylua', -- Used to format Lua code
+        'prettier',
+        'prettierd',
+        'html-lsp',
       })
       require('mason-tool-installer').setup { ensure_installed = ensure_installed }
 
@@ -658,7 +635,7 @@ require('lazy').setup({
       },
     },
     opts = {
-      notify_on_error = false,
+      notify_on_error = true,
       format_on_save = function(bufnr)
         -- Disable "format_on_save lsp_fallback" for languages that don't
         -- have a well standardized coding style. You can add additional
@@ -677,10 +654,36 @@ require('lazy').setup({
       end,
       formatters_by_ft = {
         lua = { 'stylua' },
-        php = { 'php' },
+        -- php = { 'php' },
         javascript = { 'prettierd', 'prettier', stop_after_first = true },
-        html = { 'prettier' },
-        css = { 'prettier' },
+        html = { 'prettierd', 'prettier', stop_after_first = true },
+        css = { 'prettierd', 'prettier', stop_after_first = true },
+      },
+
+      formatters = {
+        prettierd = {
+          env = {
+            PRETTIERD_DEFAULT_CONFIG = vim.fn.expand '~/.config/nvim/.prettierrc',
+          },
+        },
+        prettier = {
+          args = {
+            '--print-width',
+            '100',
+            '--tab-width',
+            '2',
+            '--use-tabs',
+            'false',
+            '--semi',
+            'true',
+            '--single-quote',
+            'true',
+            '--bracket-same-line',
+            'false',
+            '--prose-wrap',
+            'always',
+          },
+        },
       },
     },
   },
@@ -799,12 +802,49 @@ require('lazy').setup({
     end,
   },
 
+  -- Trouble.nvim: pretty list for showing diagnostics, references, telescope results, quickfix and location lists
+  {
+    'folke/trouble.nvim',
+    opts = {}, -- for default options, refer to the configuration section for custom setup.
+    cmd = 'Trouble',
+    keys = {
+      {
+        '<leader>xx',
+        '<cmd>Trouble diagnostics toggle<cr>',
+        desc = 'Diagnostics (Trouble)',
+      },
+      {
+        '<leader>xX',
+        '<cmd>Trouble diagnostics toggle filter.buf=0<cr>',
+        desc = 'Buffer Diagnostics (Trouble)',
+      },
+      {
+        '<leader>cs',
+        '<cmd>Trouble symbols toggle focus=false<cr>',
+        desc = 'Symbols (Trouble)',
+      },
+      {
+        '<leader>cl',
+        '<cmd>Trouble lsp toggle focus=false win.position=right<cr>',
+        desc = 'LSP Definitions / references / ... (Trouble)',
+      },
+      {
+        '<leader>xL',
+        '<cmd>Trouble loclist toggle<cr>',
+        desc = 'Location List (Trouble)',
+      },
+      {
+        '<leader>xQ',
+        '<cmd>Trouble qflist toggle<cr>',
+        desc = 'Quickfix List (Trouble)',
+      },
+    },
+  },
   { -- You can easily change to a different colorscheme.
     -- Change the name of the colorscheme plugin below, and then
     -- change the command in the config to whatever the name of that colorscheme is.
     --
     -- If you want to see what colorschemes are already installed, you can use `:Telescope colorscheme`.
-    -- 'folke/tokyonight.nvim',
     'catppuccin/nvim',
     name = 'catppuccin',
     priority = 1000, -- Make sure to load this before all the other start plugins.
@@ -884,12 +924,8 @@ require('lazy').setup({
     --    - Treesitter + textobjects: https://github.com/nvim-treesitter/nvim-treesitter-textobjects
   },
 
-  -- NOTE: Next step on your Neovim journey: Add/Configure additional plugins for Kickstart
-  --
-  --  Here are some example plugins that I've included in the Kickstart repository.
-  --  Uncomment any of the lines below to enable them (you will need to restart nvim).
-  --
-  -- require 'kickstart.plugins.debug',
+  -- Pre-added Plugins
+  require 'kickstart.plugins.debug',
   require 'kickstart.plugins.indent_line',
   require 'kickstart.plugins.lint',
   require 'kickstart.plugins.autopairs',
@@ -898,8 +934,6 @@ require('lazy').setup({
 
   -- NOTE: The import below can automatically add your own plugins, configuration, etc from `lua/custom/plugins/*.lua`
   --    This is the easiest way to modularize your config.
-  --
-  --  Uncomment the following line and add your plugins to `lua/custom/plugins/*.lua` to get going.
   { import = 'custom.plugins' },
   -- For additional information with loading, sourcing and examples see `:help lazy.nvim-🔌-plugin-spec`
   -- Or use telescope!
@@ -926,10 +960,45 @@ require('lazy').setup({
     },
   },
 })
-
--- Custom Keymaps!
+-- Custom K!
 vim.keymap.set('t', '<C-w><C-w>', '<C-\\><C-n><C-w><C-w>', { noremap = true })
 vim.keymap.set('n', '-', '<cmd>Oil<CR>', { desc = 'Open Oil file explorer' })
+vim.keymap.set('n', '<leader>e', vim.diagnostic.open_float, { desc = 'Show diagnostic error messages' })
+vim.keymap.set('n', '<leader>dl', vim.diagnostic.setloclist, { desc = 'Open diagnostics list' })
+vim.api.nvim_create_user_command('ShowHtmlDiagnostics', function()
+  -- Get current buffer diagnostics
+  local diagnostics = vim.diagnostic.get(0)
+
+  -- Print debug info
+  print(string.format('Found %d diagnostics in current buffer', #diagnostics))
+
+  -- Show detailed diagnostics
+  for i, d in ipairs(diagnostics) do
+    print(string.format('Diagnostic %d: %s (line %d, col %d)', i, d.message, d.lnum + 1, d.col + 1))
+  end
+
+  -- Force open the quickfix list with these diagnostics
+  vim.diagnostic.setqflist(diagnostics)
+  print 'Opened quickfix list with HTML diagnostics'
+end, {})
+
+-- Add this to the end of your init.lua
+vim.cmd [[
+  highlight DiagnosticUnderlineError gui=undercurl guisp=#f44747
+  highlight DiagnosticUnderlineWarn gui=undercurl guisp=#ff8800
+  highlight DiagnosticUnderlineInfo gui=undercurl guisp=#2aa198
+  highlight DiagnosticUnderlineHint gui=undercurl guisp=#4fc1ff
+  
+  highlight DiagnosticVirtualTextError guifg=#f44747 gui=bold
+  highlight DiagnosticVirtualTextWarn guifg=#ff8800 gui=bold
+  highlight DiagnosticVirtualTextInfo guifg=#2aa198
+  highlight DiagnosticVirtualTextHint guifg=#4fc1ff
+  
+  highlight DiagnosticSignError guifg=#f44747 gui=bold
+  highlight DiagnosticSignWarn guifg=#ff8800 gui=bold
+  highlight DiagnosticSignInfo guifg=#2aa198
+  highlight DiagnosticSignHint guifg=#4fc1ff
+]]
 
 -- The line beneath this is called `modeline`. See `:help modeline`
 -- vim: ts=2 sts=2 sw=2 et
