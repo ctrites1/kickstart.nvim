@@ -25,6 +25,8 @@ vim.opt.mouse = 'a'
 -- Don't show the mode, since it's already in the status line
 vim.opt.showmode = false
 
+vim.opt.swapfile = false
+
 -- Sync clipboard between OS and Neovim.
 --  Schedule the setting after `UiEnter` because it can increase startup-time.
 --  Remove this option if you want your OS clipboard to remain independent.
@@ -593,6 +595,12 @@ require('lazy').setup({
           },
         },
         html = {},
+        phpactor = {
+          cmd = { '/home/catrites/.local/share/nvim/opt/phpactor/bin/phpactor', 'language-server' },
+          cmd_env = {
+            PHP_OPTIONS = '-d display_errors=0',
+          },
+        },
       }
       local ensure_installed = vim.tbl_keys(servers or {})
       vim.list_extend(ensure_installed, {
@@ -600,6 +608,10 @@ require('lazy').setup({
         'prettier',
         'prettierd',
         'html-lsp',
+        'phpactor',
+        'php-cs-fixer',
+        'blade-formatter',
+        'php-debug-adapter',
       })
       require('mason-tool-installer').setup { ensure_installed = ensure_installed }
 
@@ -654,10 +666,11 @@ require('lazy').setup({
       end,
       formatters_by_ft = {
         lua = { 'stylua' },
-        -- php = { 'php' },
         javascript = { 'prettierd', 'prettier', stop_after_first = true },
         html = { 'prettierd', 'prettier', stop_after_first = true },
         css = { 'prettierd', 'prettier', stop_after_first = true },
+        php = { 'pint', 'php_cs_fixer', stop_after_first = true },
+        blade = { 'blade-formatter' },
       },
 
       formatters = {
@@ -904,8 +917,7 @@ require('lazy').setup({
     main = 'nvim-treesitter.configs', -- Sets main module to use for opts
     -- [[ Configure Treesitter ]] See `:help nvim-treesitter`
     opts = {
-      ensure_installed = { 'bash', 'c', 'diff', 'html', 'lua', 'luadoc', 'markdown', 'markdown_inline', 'query', 'vim', 'vimdoc' },
-      -- Autoinstall languages that are not installed
+      ensure_installed = { 'bash', 'c', 'diff', 'html', 'lua', 'luadoc', 'markdown', 'markdown_inline', 'query', 'vim', 'vimdoc', 'php', 'phpdoc', 'blade' },
       auto_install = true,
       highlight = {
         enable = true,
