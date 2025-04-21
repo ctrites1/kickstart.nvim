@@ -5,8 +5,32 @@ return {
     event = { 'BufReadPre', 'BufNewFile' },
     config = function()
       local lint = require 'lint'
+      lint.linters.phpcs = {
+        cmd = 'phpcs',
+        args = {
+          '--report=json',
+          '--standard=phpcs.xml', -- Use your custom ruleset
+          '-',
+        },
+        stdin = true,
+        parse = lint.linters.phpcs.parse, -- Keep the original parser
+      }
       lint.linters_by_ft = {
-        markdown = { 'markdownlint' },
+        php = { 'phpcs' },
+        javascript = { 'eslint' },
+        typescript = { 'eslint' },
+        javascriptreact = { 'eslint' },
+        typescriptreact = { 'eslint' },
+        clojure = { 'clj-kondo' },
+        dockerfile = { 'hadolint' },
+        inko = { 'inko' },
+        janet = { 'janet' },
+        json = { 'jsonlint' },
+        markdown = { 'vale', 'markdownlint' },
+        rst = { 'vale' },
+        ruby = { 'ruby' },
+        terraform = { 'tflint' },
+        text = { 'vale' },
       }
 
       -- To allow other plugins to add linters to require('lint').linters_by_ft,

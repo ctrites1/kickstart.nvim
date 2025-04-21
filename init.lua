@@ -12,10 +12,7 @@ vim.g.have_nerd_font = true
 -- NOTE: You can change these options as you wish!
 --  For more options, you can see `:help option-list`
 
--- Make line numbers default
 vim.opt.number = true
--- You can also add relative line numbers, to help with jumping.
---  Experiment for yourself to see if you like it!
 vim.opt.relativenumber = true
 vim.opt.signcolumn = 'number'
 
@@ -152,29 +149,6 @@ require('lazy').setup({
   -- NOTE: Plugins can be added with a link (or for a github repo: 'owner/repo' link).
   'tpope/vim-sleuth', -- Detect tabstop and shiftwidth automatically
   'tpope/vim-fugitive',
-
-  -- NOTE: Plugins can also be added by using a table,
-  -- with the first argument being the link and the following
-  -- keys can be used to configure plugin behavior/loading/etc.
-  --
-  -- Use `opts = {}` to automatically pass options to a plugin's `setup()` function, forcing the plugin to be loaded.
-  --
-
-  -- Alternatively, use `config = function() ... end` for full control over the configuration.
-  -- If you prefer to call `setup` explicitly, use:
-  --    {
-  --        'lewis6991/gitsigns.nvim',
-  --        config = function()
-  --            require('gitsigns').setup({
-  --                -- Your gitsigns configuration here
-  --            })
-  --        end,
-  --    }
-  --
-  -- Here is a more advanced example where we pass configuration
-  -- options to `gitsigns.nvim`.
-  --
-  -- See `:help gitsigns` to understand what the configuration keys do
   { -- Adds git related signs to the gutter, as well as utilities for managing changes
     'lewis6991/gitsigns.nvim',
     opts = {
@@ -580,7 +554,7 @@ require('lazy').setup({
         --    https://github.com/pmizio/typescript-tools.nvim
         --
         -- But for many setups, the LSP (`ts_ls`) will work just fine
-        -- ts_ls = {},
+        ts_ls = {},
         --
 
         lua_ls = {
@@ -596,9 +570,14 @@ require('lazy').setup({
         },
         html = {},
         phpactor = {
-          cmd = { '/home/catrites/.local/share/nvim/opt/phpactor/bin/phpactor', 'language-server' },
-          cmd_env = {
-            PHP_OPTIONS = '-d display_errors=0',
+          cmd = { 'phpactor', 'language-server' },
+          init_options = {
+            ['language_server_phpstan.enabled'] = false,
+            ['language_server_psalm.enabled'] = false,
+            ['language_server.diagnostics.enabled'] = false,
+          },
+          handlers = {
+            ['textDocument/publishDiagnostics'] = function(_, _, _, _) end,
           },
         },
       }
@@ -612,6 +591,9 @@ require('lazy').setup({
         'php-cs-fixer',
         'blade-formatter',
         'php-debug-adapter',
+        'typescript-language-server',
+        'eslint-lsp',
+        'tailwindcss-language-server',
       })
       require('mason-tool-installer').setup { ensure_installed = ensure_installed }
 
@@ -671,6 +653,9 @@ require('lazy').setup({
         css = { 'prettierd', 'prettier', stop_after_first = true },
         php = { 'pint', 'php_cs_fixer', stop_after_first = true },
         blade = { 'blade-formatter' },
+        typescript = { 'prettierd', 'prettier', stop_after_first = true },
+        typescriptreact = { 'prettierd', 'prettier', stop_after_first = true },
+        javascriptreact = { 'prettierd', 'prettier', stop_after_first = true },
       },
 
       formatters = {
@@ -721,7 +706,11 @@ require('lazy').setup({
           {
             'rafamadriz/friendly-snippets',
             config = function()
-              require('luasnip.loaders.from_vscode').lazy_load()
+              require('luasnip.loaders.from_vscode').lazy_load {
+                paths = {
+                  vim.fn.stdpath 'data' .. '/lazy/friendly-snippets/snippets/typescript-react',
+                },
+              }
             end,
           },
         },
@@ -734,8 +723,12 @@ require('lazy').setup({
       'hrsh7th/cmp-nvim-lsp',
       'hrsh7th/cmp-path',
       'hrsh7th/cmp-nvim-lsp-signature-help',
+      'roobert/tailwindcss-colorizer-cmp.nvim',
     },
     config = function()
+      require('tailwindcss-colorizer-cmp').setup {
+        color_square_width = 2,
+      }
       -- See `:help cmp`
       local cmp = require 'cmp'
       local luasnip = require 'luasnip'
@@ -804,6 +797,7 @@ require('lazy').setup({
             -- set group index to 0 to skip loading LuaLS completions as lazydev recommends it
             group_index = 0,
           },
+          { name = 'tailwindcss-colorizer-cmp' },
           { name = 'nvim_lsp' },
           { name = 'luasnip' },
           { name = 'path' },
@@ -915,9 +909,27 @@ require('lazy').setup({
     'nvim-treesitter/nvim-treesitter',
     build = ':TSUpdate',
     main = 'nvim-treesitter.configs', -- Sets main module to use for opts
-    -- [[ Configure Treesitter ]] See `:help nvim-treesitter`
     opts = {
-      ensure_installed = { 'bash', 'c', 'diff', 'html', 'lua', 'luadoc', 'markdown', 'markdown_inline', 'query', 'vim', 'vimdoc', 'php', 'phpdoc', 'blade' },
+      ensure_installed = {
+        'bash',
+        'c',
+        'diff',
+        'html',
+        'lua',
+        'luadoc',
+        'markdown',
+        'markdown_inline',
+        'query',
+        'vim',
+        'vimdoc',
+        'php',
+        'phpdoc',
+        'blade',
+        'javascript',
+        'typescript',
+        'tsx',
+        'css',
+      },
       auto_install = true,
       highlight = {
         enable = true,
@@ -928,12 +940,6 @@ require('lazy').setup({
       },
       indent = { enable = true, disable = { 'ruby' } },
     },
-    -- There are additional nvim-treesitter modules that you can use to interact
-    -- with nvim-treesitter. You should go explore a few and see what interests you:
-    --
-    --    - Incremental selection: Included, see `:help nvim-treesitter-incremental-selection-mod`
-    --    - Show your current context: https://github.com/nvim-treesitter/nvim-treesitter-context
-    --    - Treesitter + textobjects: https://github.com/nvim-treesitter/nvim-treesitter-textobjects
   },
 
   -- Pre-added Plugins
@@ -942,7 +948,7 @@ require('lazy').setup({
   require 'kickstart.plugins.lint',
   require 'kickstart.plugins.autopairs',
   require 'kickstart.plugins.neo-tree',
-  -- require 'kickstart.plugins.gitsigns', -- adds gitsigns recommend keymaps
+  require 'kickstart.plugins.gitsigns', -- adds gitsigns recommend keymaps
 
   -- NOTE: The import below can automatically add your own plugins, configuration, etc from `lua/custom/plugins/*.lua`
   --    This is the easiest way to modularize your config.
@@ -972,6 +978,22 @@ require('lazy').setup({
     },
   },
 })
+
+vim.g.phpcs_enabled = true
+
+vim.api.nvim_create_user_command('TogglePHPCS', function()
+  vim.g.phpcs_enabled = not vim.g.phpcs_enabled
+  if vim.g.phpcs_enabled then
+    print 'PHPCS enabled'
+    -- Restore PHPCS
+    require('lint').linters_by_ft.php = { 'phpcs' }
+  else
+    print 'PHPCS disabled'
+    -- Remove PHPCS from linters
+    require('lint').linters_by_ft.php = {}
+  end
+end, {})
+
 -- Custom K!
 vim.keymap.set('t', '<C-w><C-w>', '<C-\\><C-n><C-w><C-w>', { noremap = true })
 vim.keymap.set('n', '-', '<cmd>Oil<CR>', { desc = 'Open Oil file explorer' })

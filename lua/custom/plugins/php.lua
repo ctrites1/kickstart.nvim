@@ -27,8 +27,27 @@ return {
     'gbprod/phpactor.nvim',
     dependencies = {
       'nvim-lua/plenary.nvim',
+      'neovim/nvim-lspconfig',
     },
-    config = true,
     ft = 'php',
+    config = function()
+      require('phpactor').setup {
+        lspconfig = {
+          enabled = true,
+          options = {},
+          init_options = {
+            languageServerPhpstan_enabled = true,
+            languageServerPsalm_enabled = false,
+            indexer_excludePatterns = { 'vendor/**/Tests/**/*' },
+            symfony_enabled = false,
+            phpCodeSniffer_enabled = false,
+            languageServerWorseReflection_enable = true,
+            worseReflection_hover_classImports = true,
+            worseReflection_hover_classInfo = true,
+            completionWorseReflection_experimental = true,
+          },
+        },
+      }
+    end,
   },
 }
