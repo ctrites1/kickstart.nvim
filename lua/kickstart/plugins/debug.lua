@@ -23,6 +23,8 @@ return {
 
     -- Add your own debuggers here
     'leoluz/nvim-dap-go',
+    -- My Debuggers ;)
+    'mfussenegger/nvim-dap-python',
   },
   keys = {
     -- Basic debugging keymaps, feel free to change to your liking!
@@ -95,6 +97,7 @@ return {
       ensure_installed = {
         -- Update this to ensure that you have the debuggers for the langs you want
         'delve',
+        'debugpy',
       },
     }
 
@@ -142,6 +145,45 @@ return {
         -- On Windows delve must be run attached or it crashes.
         -- See https://github.com/leoluz/nvim-dap-go/blob/main/README.md#configuring
         detached = vim.fn.has 'win32' == 0,
+      },
+    }
+    require('dap-python').setup 'python' -- Use the Python in your PATH
+    -- If you want to use a specific Python interpreter:
+    -- require('dap-python').setup('path/to/python')
+
+    -- Add Python configurations
+    dap.configurations.python = {
+      {
+        type = 'python',
+        request = 'launch',
+        name = 'Launch file',
+        program = '${file}',
+        pythonPath = function()
+          -- Try to detect python path from virtual environments
+          local venv = os.getenv 'VIRTUAL_ENV'
+          if venv then
+            return venv .. '/bin/python'
+          end
+          -- Return a default value
+          return 'python'
+        end,
+      },
+      {
+        type = 'python',
+        request = 'launch',
+        name = 'Launch with arguments',
+        program = '${file}',
+        args = function()
+          local args_string = vim.fn.input 'Arguments: '
+          return vim.split(args_string, ' ')
+        end,
+        pythonPath = function()
+          local venv = os.getenv 'VIRTUAL_ENV'
+          if venv then
+            return venv .. '/bin/python'
+          end
+          return 'python'
+        end,
       },
     }
   end,

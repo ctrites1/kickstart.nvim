@@ -16,6 +16,7 @@ return {
         parse = lint.linters.phpcs.parse, -- Keep the original parser
       }
       lint.linters_by_ft = {
+        python = { 'flake8' },
         php = { 'phpcs' },
         javascript = { 'eslint' },
         typescript = { 'eslint' },

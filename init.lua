@@ -536,27 +536,10 @@ require('lazy').setup({
 
       -- Enable the following language servers
       --  Feel free to add/remove any LSPs that you want here. They will automatically be installed.
-      --
-      --  Add any additional override configuration in the following tables. Available keys are:
-      --  - cmd (table): Override the default command used to start the server
-      --  - filetypes (table): Override the default list of associated filetypes for the server
-      --  - capabilities (table): Override fields in capabilities. Can be used to disable certain LSP features.
-      --  - settings (table): Override the default settings passed when initializing the server.
-      --        For example, to see the options for `lua_ls`, you could go to: https://luals.github.io/wiki/settings/
+      -- ... etc. See `:help lspconfig-all` for a list of all the pre-configured LSPs
       local servers = {
-        -- clangd = {},
-        -- gopls = {},
-        -- pyright = {},
-        -- rust_analyzer = {},
-        -- ... etc. See `:help lspconfig-all` for a list of all the pre-configured LSPs
-        --
-        -- Some languages (like typescript) have entire language plugins that can be useful:
-        --    https://github.com/pmizio/typescript-tools.nvim
-        --
-        -- But for many setups, the LSP (`ts_ls`) will work just fine
+        pyright = {},
         ts_ls = {},
-        --
-
         lua_ls = {
           settings = {
             Lua = {
@@ -594,6 +577,11 @@ require('lazy').setup({
         'typescript-language-server',
         'eslint-lsp',
         'tailwindcss-language-server',
+        'pyright',
+        'black',
+        'flake8',
+        'isort',
+        'debugpy',
       })
       require('mason-tool-installer').setup { ensure_installed = ensure_installed }
 
@@ -656,6 +644,7 @@ require('lazy').setup({
         typescript = { 'prettierd', 'prettier', stop_after_first = true },
         typescriptreact = { 'prettierd', 'prettier', stop_after_first = true },
         javascriptreact = { 'prettierd', 'prettier', stop_after_first = true },
+        python = { 'black', 'isort', stop_after_first = false },
       },
 
       formatters = {
@@ -1016,7 +1005,6 @@ vim.api.nvim_create_user_command('ShowHtmlDiagnostics', function()
   print 'Opened quickfix list with HTML diagnostics'
 end, {})
 
--- Add this to the end of your init.lua
 vim.cmd [[
   highlight DiagnosticUnderlineError gui=undercurl guisp=#f44747
   highlight DiagnosticUnderlineWarn gui=undercurl guisp=#ff8800
@@ -1033,6 +1021,20 @@ vim.cmd [[
   highlight DiagnosticSignInfo guifg=#2aa198
   highlight DiagnosticSignHint guifg=#4fc1ff
 ]]
+
+vim.api.nvim_create_autocmd('FileType', {
+  pattern = 'python',
+  callback = function()
+    -- Set indentation to 4 spaces for Python
+    vim.opt_local.expandtab = true
+    vim.opt_local.shiftwidth = 4
+    vim.opt_local.tabstop = 4
+    vim.opt_local.softtabstop = 4
+
+    -- Enable auto formatting on save
+    vim.b.autoformat = true
+  end,
+})
 
 -- The line beneath this is called `modeline`. See `:help modeline`
 -- vim: ts=2 sts=2 sw=2 et
