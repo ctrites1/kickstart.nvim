@@ -162,18 +162,6 @@ require('lazy').setup({
     },
   },
   -- NOTE: Plugins can also be configured to run Lua code when they are loaded.
-  --
-  -- This is often very useful to both group configuration, as well as handle
-  -- lazy loading plugins that don't need to be loaded immediately at startup.
-  --
-  -- For example, in the following configuration, we use:
-  --  event = 'VimEnter'
-  --
-  -- which loads which-key before all the UI elements are loaded. Events can be
-  -- normal autocommands events (`:help autocmd-events`).
-  --
-  -- Then, because we use the `opts` key (recommended), the configuration runs
-  -- after the plugin has been loaded as `require(MODULE).setup(opts)`.
 
   { -- Useful plugin to show you pending keybinds.
     'folke/which-key.nvim',
@@ -232,13 +220,6 @@ require('lazy').setup({
     },
   },
 
-  -- NOTE: Plugins can specify dependencies.
-  --
-  -- The dependencies are proper plugin specifications as well - anything
-  -- you do for a plugin at the top level, you can do for a dependency.
-  --
-  -- Use the `dependencies` key to specify the dependencies of a particular plugin
-
   { -- Fuzzy Finder (files, lsp, etc)
     'nvim-telescope/telescope.nvim',
     event = 'VimEnter',
@@ -264,16 +245,8 @@ require('lazy').setup({
       { 'nvim-tree/nvim-web-devicons', enabled = vim.g.have_nerd_font },
     },
     config = function()
-      -- Telescope is a fuzzy finder that comes with a lot of different things that
-      -- it can fuzzy find! It's more than just a "file finder", it can search
-      -- many different aspects of Neovim, your workspace, LSP, and more!
-      --
       -- The easiest way to use Telescope, is to start by doing something like:
       --  :Telescope help_tags
-      --
-      -- After running this command, a window will open up and you're able to
-      -- type in the prompt window. You'll see a list of `help_tags` options and
-      -- a corresponding preview of the help.
       --
       -- Two important keymaps to use while in Telescope are:
       --  - Insert mode: <c-/>
@@ -561,6 +534,44 @@ require('lazy').setup({
           },
           handlers = {
             ['textDocument/publishDiagnostics'] = function(_, _, _, _) end,
+          },
+        },
+        tailwindcss = {
+          filetypes = {
+            'html',
+            'css',
+            'scss',
+            'javascript',
+            'javascriptreact',
+            'typescript',
+            'typescriptreact',
+            'vue',
+            'svelte',
+            'php',
+            'blade',
+          },
+          settings = {
+            tailwindCSS = {
+              experimental = {
+                classRegex = {
+                  -- Enable class detection in more contexts
+                  'class[:]\\s*[\'"`]([^\'"`]*)[\'"`]',
+                  'className[:]\\s*[\'"`]([^\'"`]*)[\'"`]',
+                  'class[=]\\s*[\'"`]([^\'"`]*)[\'"`]',
+                  'className[=]\\s*[\'"`]([^\'"`]*)[\'"`]',
+                },
+              },
+              validate = true,
+              lint = {
+                cssConflict = 'warning',
+                invalidApply = 'error',
+                invalidScreen = 'error',
+                invalidVariant = 'error',
+                invalidConfigPath = 'error',
+                invalidTailwindDirective = 'error',
+                recommendedVariantOrder = 'warning',
+              },
+            },
           },
         },
       }
@@ -930,7 +941,24 @@ require('lazy').setup({
       indent = { enable = true, disable = { 'ruby' } },
     },
   },
-
+  {
+    'windwp/nvim-ts-autotag',
+    dependencies = 'nvim-treesitter/nvim-treesitter',
+    config = function()
+      require('nvim-ts-autotag').setup {
+        opts = {
+          enable_close = true, -- Auto close tags
+          enable_rename = true, -- Auto rename pairs of tags
+          enable_close_on_slash = false, -- Auto close on trailing </
+        },
+      }
+    end,
+  },
+  -- Enhanced word completion
+  {
+    'hrsh7th/cmp-buffer',
+    'hrsh7th/cmp-cmdline',
+  },
   -- Pre-added Plugins
   require 'kickstart.plugins.debug',
   require 'kickstart.plugins.indent_line',
@@ -1025,7 +1053,6 @@ vim.cmd [[
 vim.api.nvim_create_autocmd('FileType', {
   pattern = 'python',
   callback = function()
-    -- Set indentation to 4 spaces for Python
     vim.opt_local.expandtab = true
     vim.opt_local.shiftwidth = 4
     vim.opt_local.tabstop = 4
@@ -1035,6 +1062,20 @@ vim.api.nvim_create_autocmd('FileType', {
     vim.b.autoformat = true
   end,
 })
+
+vim.api.nvim_create_autocmd('FileType', {
+  pattern = { 'typescript', 'typescriptreact', 'javascript', 'javascriptreact' },
+  callback = function()
+    vim.opt_local.expandtab = true
+    vim.opt_local.shiftwidth = 2
+    vim.opt_local.tabstop = 2
+    vim.opt_local.softtabstop = 2
+    vim.opt_local.indentexpr = ''
+    vim.b.sleuth_automatic = 0
+  end,
+})
+
+require 'enhanced-config'
 
 -- The line beneath this is called `modeline`. See `:help modeline`
 -- vim: ts=2 sts=2 sw=2 et
