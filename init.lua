@@ -1011,6 +1011,8 @@ vim.api.nvim_create_user_command('TogglePHPCS', function()
   end
 end, {})
 
+require('lint').linters_by_ft.python = { 'flake8' }
+
 -- Custom K!
 vim.keymap.set('t', '<C-w><C-w>', '<C-\\><C-n><C-w><C-w>', { noremap = true })
 vim.keymap.set('n', '-', '<cmd>Oil<CR>', { desc = 'Open Oil file explorer' })
@@ -1062,6 +1064,8 @@ vim.api.nvim_create_autocmd('FileType', {
     vim.b.autoformat = true
   end,
 })
+
+vim.keymap.set('n', '<leader>vb', '<C-v>', { desc = 'Visual Block Mode' })
 
 vim.api.nvim_create_autocmd('FileType', {
   pattern = { 'typescript', 'typescriptreact', 'javascript', 'javascriptreact' },
