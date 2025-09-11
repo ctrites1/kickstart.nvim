@@ -82,6 +82,10 @@ vim.opt.confirm = true
 --  See `:help hlsearch`
 vim.keymap.set('n', '<Esc>', '<cmd>nohlsearch<CR>')
 
+-- Keymaps for vim-flog
+vim.keymap.set('n', '<leader>gl', '<cmd>Flog<CR>', { desc = '[L]og (Flog)' })
+vim.keymap.set('n', '<leader>gv', '<cmd>Flogsplit<CR>', { desc = '[V]ertical Log (Flog)' })
+
 -- Diagnostic keymaps
 vim.keymap.set('n', '<leader>q', vim.diagnostic.setloclist, { desc = 'Open diagnostic [Q]uickfix list' })
 
@@ -211,6 +215,7 @@ require('lazy').setup({
       spec = {
         { '<leader>c', group = '[C]ode', mode = { 'n', 'x' } },
         { '<leader>d', group = '[D]ocument' },
+        { '<leader>g', group = ' Git Flog' },
         { '<leader>r', group = '[R]ename' },
         { '<leader>s', group = '[S]earch' },
         { '<leader>w', group = '[W]orkspace' },
