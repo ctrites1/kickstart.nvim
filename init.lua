@@ -16,6 +16,9 @@ vim.opt.number = true
 vim.opt.relativenumber = true
 vim.opt.signcolumn = 'number'
 
+-- Tell Neovim to always use the system python for its own needs
+vim.g.python3_host_prog = '/usr/bin/python3'
+
 -- Enable mouse mode, can be useful for resizing splits for example!
 vim.opt.mouse = 'a'
 
@@ -598,6 +601,8 @@ require('lazy').setup({
         'flake8',
         'isort',
         'debugpy',
+        'jsonlint',
+        'json-lsp',
       })
       require('mason-tool-installer').setup { ensure_installed = ensure_installed }
 
@@ -1003,6 +1008,7 @@ require('lazy').setup({
 
 vim.g.phpcs_enabled = true
 
+-- Required Linters!
 vim.api.nvim_create_user_command('TogglePHPCS', function()
   vim.g.phpcs_enabled = not vim.g.phpcs_enabled
   if vim.g.phpcs_enabled then
@@ -1017,6 +1023,7 @@ vim.api.nvim_create_user_command('TogglePHPCS', function()
 end, {})
 
 require('lint').linters_by_ft.python = { 'flake8' }
+require('lint').linters_by_ft.json = { 'jsonlint' }
 
 -- Custom K!
 vim.keymap.set('t', '<C-w><C-w>', '<C-\\><C-n><C-w><C-w>', { noremap = true })
