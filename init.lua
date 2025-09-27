@@ -870,6 +870,11 @@ require('lazy').setup({
       require('catppuccin').setup {
         flavour = 'mocha',
         transparent_background = true,
+        custom_highlights = function(colors)
+          return {
+            MiniIndentscopeSymbol = { fg = colors.flamingo },
+          }
+        end,
       }
       -- Load the colorscheme here.
       vim.cmd.colorscheme 'catppuccin'
@@ -913,6 +918,8 @@ require('lazy').setup({
       end
 
       require('mini.comment').setup()
+      require('mini.indentscope').setup()
+      require('mini.icons').setup()
     end,
   },
   { -- Highlight, edit, and navigate code
