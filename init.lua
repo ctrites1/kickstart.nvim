@@ -1,14 +1,11 @@
 -- Set <space> as the leader key
--- See `:help mapleader`
 --  NOTE: Must happen before plugins are loaded (otherwise wrong leader will be used)
 vim.g.mapleader = ' '
 vim.g.maplocalleader = ' '
 
--- Set to true if you have a Nerd Font installed and selected in the terminal
 vim.g.have_nerd_font = true
 
 -- [[ Setting options ]]
--- See `:help vim.opt`
 -- NOTE: You can change these options as you wish!
 --  For more options, you can see `:help option-list`
 
@@ -26,6 +23,8 @@ vim.opt.mouse = 'a'
 vim.opt.showmode = false
 
 vim.opt.swapfile = false
+
+vim.opt.fileformats = { 'unix', 'dos' }
 
 -- Sync clipboard between OS and Neovim.
 --  Schedule the setting after `UiEnter` because it can increase startup-time.
@@ -89,6 +88,15 @@ vim.keymap.set('n', '<Esc>', '<cmd>nohlsearch<CR>')
 vim.keymap.set('n', '<leader>gl', '<cmd>Flog<CR>', { desc = '[L]og (Flog)' })
 vim.keymap.set('n', '<leader>gv', '<cmd>Flogsplit<CR>', { desc = '[V]ertical Log (Flog)' })
 
+-- Git Conflict keymaps
+vim.keymap.set('n', '<leader>gco', '<cmd>GitConflictChooseOurs<CR>', { desc = 'Conflict: Choose [O]urs (Current)' })
+vim.keymap.set('n', '<leader>gct', '<cmd>GitConflictChooseTheirs<CR>', { desc = 'Conflict: Choose [T]heirs (Incoming)' })
+vim.keymap.set('n', '<leader>gcb', '<cmd>GitConflictChooseBoth<CR>', { desc = 'Conflict: Choose [B]oth' })
+vim.keymap.set('n', '<leader>gcn', '<cmd>GitConflictChooseNone<CR>', { desc = 'Conflict: Choose [N]one' })
+vim.keymap.set('n', '<leader>gcq', '<cmd>GitConflictListQf<CR>', { desc = 'Conflict: List in [Q]uickfix' })
+vim.keymap.set('n', ']x', '<cmd>GitConflictNextConflict<CR>', { desc = 'Next conflict' })
+vim.keymap.set('n', '[x', '<cmd>GitConflictPrevConflict<CR>', { desc = 'Previous conflict' })
+
 -- Diagnostic keymaps
 vim.keymap.set('n', '<leader>q', vim.diagnostic.setloclist, { desc = 'Open diagnostic [Q]uickfix list' })
 
@@ -130,7 +138,6 @@ vim.api.nvim_create_autocmd('TextYankPost', {
 })
 
 -- [[ Install `lazy.nvim` plugin manager ]]
---    See `:help lazy.nvim.txt` or https://github.com/folke/lazy.nvim for more info
 local lazypath = vim.fn.stdpath 'data' .. '/lazy/lazy.nvim'
 if not (vim.uv or vim.loop).fs_stat(lazypath) then
   local lazyrepo = 'https://github.com/folke/lazy.nvim.git'
@@ -142,12 +149,8 @@ end ---@diagnostic disable-next-line: undefined-field
 vim.opt.rtp:prepend(lazypath)
 
 -- [[ Configure and install plugins ]]
---
 --  To check the current status of your plugins, run
 --    :Lazy
---
---  You can press `?` in this menu for help. Use `:q` to close the window
---
 --  To update plugins you can run
 --    :Lazy update
 --
@@ -166,8 +169,18 @@ require('lazy').setup({
         topdelete = { text = '‾' },
         changedelete = { text = '~' },
       },
+      current_line_blame = false, -- Start with it disabled
+      current_line_blame_opts = {
+        virt_text = true,
+        virt_text_pos = 'eol', -- 'eol' | 'overlay' | 'right_align'
+        delay = 500,
+      },
+      current_line_blame_formatter = '<author>, <author_time:%Y-%m-%d>',
     },
   },
+
+  { 'akinsho/git-conflict.nvim', version = '*', config = true },
+
   -- NOTE: Plugins can also be configured to run Lua code when they are loaded.
 
   { -- Useful plugin to show you pending keybinds.
@@ -219,11 +232,13 @@ require('lazy').setup({
         { '<leader>c', group = '[C]ode', mode = { 'n', 'x' } },
         { '<leader>d', group = '[D]ocument' },
         { '<leader>g', group = ' Git Flog' },
+        { '<leader>gc', group = ' Git [C]onflicts' },
         { '<leader>r', group = '[R]ename' },
         { '<leader>s', group = '[S]earch' },
         { '<leader>w', group = '[W]orkspace' },
         { '<leader>t', group = '[T]oggle' },
         { '<leader>h', group = 'Git [H]unk', mode = { 'n', 'v' } },
+        { '<leader>x', group = '󱉥 Lists' },
       },
     },
   },
@@ -234,15 +249,9 @@ require('lazy').setup({
     branch = '0.1.x',
     dependencies = {
       'nvim-lua/plenary.nvim',
-      { -- If encountering errors, see telescope-fzf-native README for installation instructions
+      {
         'nvim-telescope/telescope-fzf-native.nvim',
-
-        -- `build` is used to run some command when the plugin is installed/updated.
-        -- This is only run then, not every time Neovim starts up.
         build = 'make',
-
-        -- `cond` is a condition used to determine whether this plugin should be
-        -- installed and loaded.
         cond = function()
           return vim.fn.executable 'make' == 1
         end,
@@ -508,19 +517,11 @@ require('lazy').setup({
         end,
       })
 
-      -- LSP servers and clients are able to communicate to each other what features they support.
-      --  By default, Neovim doesn't support everything that is in the LSP specification.
-      --  When you add nvim-cmp, luasnip, etc. Neovim now has *more* capabilities.
-      --  So, we create new capabilities with nvim cmp, and then broadcast that to the servers.
       local capabilities = vim.lsp.protocol.make_client_capabilities()
       capabilities = vim.tbl_deep_extend('force', capabilities, require('cmp_nvim_lsp').default_capabilities())
 
-      -- Enable the following language servers
-      --  Feel free to add/remove any LSPs that you want here. They will automatically be installed.
-      -- ... etc. See `:help lspconfig-all` for a list of all the pre-configured LSPs
       local servers = {
         pyright = {},
-        ts_ls = {},
         lua_ls = {
           settings = {
             Lua = {
@@ -585,7 +586,7 @@ require('lazy').setup({
       }
       local ensure_installed = vim.tbl_keys(servers or {})
       vim.list_extend(ensure_installed, {
-        'stylua', -- Used to format Lua code
+        'stylua',
         'prettier',
         'prettierd',
         'html-lsp',
@@ -593,7 +594,6 @@ require('lazy').setup({
         'php-cs-fixer',
         'blade-formatter',
         'php-debug-adapter',
-        'typescript-language-server',
         'eslint-lsp',
         'tailwindcss-language-server',
         'pyright',
@@ -603,6 +603,9 @@ require('lazy').setup({
         'debugpy',
         'jsonlint',
         'json-lsp',
+        'yamlfmt',
+        'yamllint',
+        'yaml-language-server',
       })
       require('mason-tool-installer').setup { ensure_installed = ensure_installed }
 
@@ -612,9 +615,6 @@ require('lazy').setup({
         handlers = {
           function(server_name)
             local server = servers[server_name] or {}
-            -- This handles overriding only values explicitly passed
-            -- by the server configuration above. Useful when disabling
-            -- certain features of an LSP (for example, turning off formatting for ts_ls)
             server.capabilities = vim.tbl_deep_extend('force', {}, capabilities, server.capabilities or {})
             require('lspconfig')[server_name].setup(server)
           end,
@@ -666,31 +666,66 @@ require('lazy').setup({
         typescriptreact = { 'prettierd', 'prettier', stop_after_first = true },
         javascriptreact = { 'prettierd', 'prettier', stop_after_first = true },
         python = { 'black', 'isort', stop_after_first = false },
+        yaml = { 'yamlfmt' },
       },
 
       formatters = {
         prettierd = {
-          env = {
-            PRETTIERD_DEFAULT_CONFIG = vim.fn.expand '~/.config/nvim/.prettierrc',
-          },
+          require_cwd = true,
+          cwd = function(self, ctx)
+            return require('conform.util').root_file {
+              '.prettierrc',
+              '.prettierrc.json',
+              '.prettierrc.yml',
+              '.prettierrc.yaml',
+              '.prettierrc.js',
+              '.prettierrc.cjs',
+              '.prettierrc.mjs',
+              'prettier.config.js',
+              'prettier.config.cjs',
+              'prettier.config.mjs',
+              'package.json',
+            }(self, ctx)
+          end,
         },
         prettier = {
-          args = {
-            '--print-width',
-            '100',
-            '--tab-width',
-            '2',
-            '--use-tabs',
-            'false',
-            '--semi',
-            'true',
-            '--single-quote',
-            'true',
-            '--bracket-same-line',
-            'false',
-            '--prose-wrap',
-            'always',
-          },
+          require_cwd = true,
+          cwd = function(self, ctx)
+            return require('conform.util').root_file {
+              '.prettierrc',
+              '.prettierrc.json',
+              '.prettierrc.yml',
+              '.prettierrc.yaml',
+              '.prettierrc.js',
+              '.prettierrc.cjs',
+              '.prettierrc.mjs',
+              'prettier.config.js',
+              'prettier.config.cjs',
+              'prettier.config.mjs',
+              'package.json',
+            }(self, ctx)
+          end,
+          -- prepend_args = {
+          --   '--config-precedence',
+          --   'prefer-file',
+          --   '--print-width',
+          --   '100',
+          --   '--tab-width',
+          --   '2',
+          --   '--use-tabs',
+          --   'false',
+          --   '--semi',
+          --   'true',
+          --   '--single-quote',
+          --   'true',
+          --   '--bracket-same-line',
+          --   'false',
+          --   '--prose-wrap',
+          --   'always',
+          -- },
+        },
+        yamlfmt = {
+          args = { '-formatter', 'retain_line_breaks=true' },
         },
       },
     },
@@ -739,7 +774,6 @@ require('lazy').setup({
       require('tailwindcss-colorizer-cmp').setup {
         color_square_width = 2,
       }
-      -- See `:help cmp`
       local cmp = require 'cmp'
       local luasnip = require 'luasnip'
       luasnip.config.setup {}
@@ -857,11 +891,7 @@ require('lazy').setup({
       },
     },
   },
-  { -- You can easily change to a different colorscheme.
-    -- Change the name of the colorscheme plugin below, and then
-    -- change the command in the config to whatever the name of that colorscheme is.
-    --
-    -- If you want to see what colorschemes are already installed, you can use `:Telescope colorscheme`.
+  { -- If you want to see what colorschemes are already installed, you can use `:Telescope colorscheme`.
     'catppuccin/nvim',
     name = 'catppuccin',
     priority = 1000, -- Make sure to load this before all the other start plugins.
@@ -870,19 +900,70 @@ require('lazy').setup({
       require('catppuccin').setup {
         flavour = 'mocha',
         transparent_background = true,
+        auto_integrations = true,
+        integrations = {
+          cmp = true,
+          mini = {
+            enabled = true,
+            indentscope_color = '',
+          },
+          mason = true,
+        },
         custom_highlights = function(colors)
           return {
-            MiniIndentscopeSymbol = { fg = colors.flamingo },
+            MiniIndentscopeSymbol = { fg = colors.rosewater },
+            LineNrAbove = { fg = colors.overlay0 },
+            LineNrBelow = { fg = colors.overlay0 },
           }
         end,
       }
-      -- Load the colorscheme here.
+
       vim.cmd.colorscheme 'catppuccin'
+
+      -- Set some todo-comment colours
+      vim.api.nvim_set_hl(0, 'TodoBgHACK', { bg = '#fba33e', fg = '#1e1e2e', bold = true })
+      vim.api.nvim_set_hl(0, 'TodoFgHACK', { fg = '#fba33e' })
+      vim.api.nvim_set_hl(0, 'TodoSignHACK', { fg = '#fba33e' })
+
+      vim.api.nvim_set_hl(0, 'TodoBgWARN', { bg = '#FBBF24', fg = '#1e1e2e', bold = true })
+      vim.api.nvim_set_hl(0, 'TodoFgWARN', { fg = '#FBBF24' })
+      vim.api.nvim_set_hl(0, 'TodoSignWARN', { fg = '#FBBF24' })
+
+      vim.api.nvim_set_hl(0, 'TodoBgTEST', { bg = '#FF00FF', fg = '#1e1e2e', bold = true })
+      vim.api.nvim_set_hl(0, 'TodoFgTEST', { fg = '#FF00FF' })
+      vim.api.nvim_set_hl(0, 'TodoSignTEST', { fg = '#FF00FF' })
+
+      vim.api.nvim_set_hl(0, 'TodoBgPERF', { bg = '#a87cf3', fg = '#1e1e2e', bold = true })
+      vim.api.nvim_set_hl(0, 'TodoFgPERF', { fg = '#a87cf3' })
+      vim.api.nvim_set_hl(0, 'TodoSignPERF', { fg = '#a87cf3' })
     end,
   },
 
+  -- FIX:
+  -- TODO:
+  -- HACK:
+  -- WARN:
+  -- PERF:
+  -- NOTE:
+  -- TEST:
+
   -- Highlight todo, notes, etc in comments
-  { 'folke/todo-comments.nvim', event = 'VimEnter', dependencies = { 'nvim-lua/plenary.nvim' }, opts = { signs = false } },
+  {
+    'folke/todo-comments.nvim',
+    event = 'VimEnter',
+    dependencies = { 'nvim-lua/plenary.nvim' },
+    opts = {
+      signs = true,
+      keywords = {
+        TODO = { icon = ' ', color = 'info' },
+        HACK = { icon = ' ', color = 'warning' },
+        WARN = { icon = ' ', color = 'warning', alt = { 'WARNING', 'XXX' } },
+        PERF = { icon = ' ', alt = { 'OPTIM', 'PERFORMANCE', 'OPTIMIZE' } },
+        NOTE = { icon = ' ', color = 'hint', alt = { 'INFO' } },
+        TEST = { icon = '⏲ ', color = 'test', alt = { 'TESTING', 'PASSED', 'FAILED' } },
+      },
+    },
+  },
 
   { -- Collection of various small independent plugins/modules
     'echasnovski/mini.nvim',
@@ -908,6 +989,17 @@ require('lazy').setup({
       local statusline = require 'mini.statusline'
       -- set use_icons to true if you have a Nerd Font
       statusline.setup { use_icons = vim.g.have_nerd_font }
+      statusline.section_fileinfo = function()
+        local filetype = vim.bo.filetype
+        local fileformat = vim.bo.fileformat -- unix/dos/mac
+        local encoding = vim.bo.fileencoding ~= '' and vim.bo.fileencoding or vim.opt.encoding:get()
+
+        if filetype == '' then
+          filetype = 'no ft'
+        end
+
+        return string.format('%s | %s | %s', filetype:upper(), fileformat:upper(), encoding:upper())
+      end
 
       -- You can configure sections in the statusline by overriding their
       -- default behavior. For example, here we set the section for
@@ -958,6 +1050,23 @@ require('lazy').setup({
       indent = { enable = true, disable = { 'ruby' } },
     },
   },
+
+  {
+    'pmizio/typescript-tools.nvim',
+    dependencies = { 'nvim-lua/plenary.nvim', 'neovim/nvim-lspconfig' },
+    ft = { 'typescript', 'typescriptreact' },
+    opts = {
+      settings = {
+        separate_diagnostic_server = true,
+        publish_diagnostic_on = 'insert_leave',
+        tsserver_file_preferences = {
+          includeInlayParameterNameHints = 'all',
+          includeInlayFunctionParameterTypeHints = true,
+        },
+      },
+    },
+  },
+
   {
     'windwp/nvim-ts-autotag',
     dependencies = 'nvim-treesitter/nvim-treesitter',
@@ -993,8 +1102,6 @@ require('lazy').setup({
   -- you can continue same window with `<space>sr` which resumes last telescope search
 }, {
   ui = {
-    -- If you are using a Nerd Font: set icons to an empty table which will use the
-    -- default lazy.nvim defined Nerd Font icons, otherwise define a unicode icons table
     icons = vim.g.have_nerd_font and {} or {
       cmd = '⌘',
       config = '🛠',
@@ -1032,11 +1139,34 @@ end, {})
 require('lint').linters_by_ft.python = { 'flake8' }
 require('lint').linters_by_ft.json = { 'jsonlint' }
 
--- Custom K!
-vim.keymap.set('t', '<C-w><C-w>', '<C-\\><C-n><C-w><C-w>', { noremap = true })
+-- Custom Keymaps!
+vim.keymap.set('t', '<C-w><C-w>', '<C-\\><C-n><C-w><C-w>', { noremap = true, desc = 'Navigate from terminal to other windows' })
 vim.keymap.set('n', '-', '<cmd>Oil<CR>', { desc = 'Open Oil file explorer' })
 vim.keymap.set('n', '<leader>e', vim.diagnostic.open_float, { desc = 'Show diagnostic error messages' })
 vim.keymap.set('n', '<leader>dl', vim.diagnostic.setloclist, { desc = 'Open diagnostics list' })
+vim.keymap.set('n', '<C-Down>', ':move .+1<CR>==', { desc = 'Move current line down' })
+vim.keymap.set('n', '<C-Up>', ':move .-2<CR>==', { desc = 'Move current line up' })
+vim.keymap.set('v', '<C-Down>', ":move '>+1<CR>gv=gv", { desc = 'Move selected lines down' })
+vim.keymap.set('v', '<C-Up>', ":move '<-2<CR>gv=gv", { desc = 'Move selected lines up' })
+vim.keymap.set('n', ']t', function()
+  require('todo-comments').jump_next()
+end, { desc = '✓ Next todo comment' })
+vim.keymap.set('n', '[t', function()
+  require('todo-comments').jump_prev()
+end, { desc = '✓ Previous todo comment' })
+vim.keymap.set('n', ']e', function()
+  require('todo-comments').jump_next { keywords = { 'ERROR', 'FIX', 'FIXME' } }
+end, { desc = ' Next error/fix todo comment' })
+vim.keymap.set('n', '[e', function()
+  require('todo-comments').jump_prev { keywords = { 'ERROR', 'FIX', 'FIXME' } }
+end, { desc = ' Previous error/fix todo comment' })
+vim.keymap.set('n', '<leader>st', '<cmd>TodoTelescope<CR>', { desc = ' [S]earch [T]odos' })
+vim.keymap.set('n', '<leader>sT', '<cmd>TodoTelescope keywords=TODO,FIX,FIXME<CR>', { desc = ' [S]earch [T]odos (TODO/FIX only)' })
+vim.keymap.set('n', '<leader>xq', '<cmd>TodoQuickFix<CR>', { desc = '󱓥 Todos in Quickfix' })
+vim.keymap.set('n', '<leader>xl', '<cmd>TodoLocList<CR>', { desc = '󱓥 Todos in Location List' })
+vim.keymap.set('n', '<leader>xt', '<cmd>Trouble todo toggle<CR>', { desc = '󱓥 Todos (Trouble)' })
+vim.keymap.set('n', '<leader>tb', '<cmd>Gitsigns toggle_current_line_blame<CR>', { desc = '[T]oggle Git [B]lame line' })
+
 vim.api.nvim_create_user_command('ShowHtmlDiagnostics', function()
   -- Get current buffer diagnostics
   local diagnostics = vim.diagnostic.get(0)
