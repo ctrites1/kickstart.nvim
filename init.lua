@@ -242,6 +242,13 @@ require('lazy').setup({
       },
     },
   },
+  {
+    'wakatime/vim-wakatime',
+    lazy = false,
+    setup = function()
+      vim.cmd [[packadd wakatime/vim-wakatime]]
+    end,
+  },
 
   { -- Fuzzy Finder (files, lsp, etc)
     'nvim-telescope/telescope.nvim',
@@ -360,7 +367,6 @@ require('lazy').setup({
 
       -- Useful status updates for LSP.
       { 'j-hui/fidget.nvim', opts = {} },
-
       { 'saghen/blink.cmp' },
     },
     config = function()
@@ -728,30 +734,6 @@ require('lazy').setup({
         },
       },
     },
-  },
-
-  {
-    'saghen/blink.cmp',
-    dependencies = { 'rafamadriz/friendly-snippets' },
-    version = '1.*',
-    ---@module 'blink.cmp'
-    ---@type blink.cmp.Config
-    opts = {
-      keymap = {
-        preset = 'default',
-      },
-      appearance = {
-        nerd_font_variant = 'mono',
-      },
-      completion = {
-        documentation = { auto_show = true },
-      },
-      sources = {
-        default = { 'lsp', 'path', 'snippets', 'buffer' },
-      },
-      fuzzy = { implementation = 'prefer_rust_with_warning' },
-    },
-    opts_extend = { 'sources.default' },
   },
 
   -- Trouble.nvim: pretty list for showing diagnostics, references, telescope results, quickfix and location lists
