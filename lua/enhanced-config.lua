@@ -1,4 +1,5 @@
--- Add these configurations to your existing nvim config
+-- Enhanced configuration for blink.cmp
+-- Replaces the nvim-cmp version
 
 -- ===== ENHANCED INSERT-MODE FORMATTING =====
 
@@ -48,128 +49,44 @@ conform.setup {
   },
 }
 
--- ===== ENHANCED LANGUAGE-SPECIFIC AUTOCOMPLETE =====
+-- ===== ENHANCED LANGUAGE-SPECIFIC AUTOCOMPLETE WITH BLINK.CMP =====
 
--- Add more completion sources to nvim-cmp
-local cmp = require 'cmp'
+-- blink.cmp configuration is done in the main init.lua plugin setup
+-- Here we just add some helper functions and language-specific tweaks
 
--- Enhanced cmp setup with better language-specific sources
-cmp.setup {
-  sources = cmp.config.sources {
-    {
-      name = 'nvim_lsp',
-      priority = 1000,
-      -- More aggressive LSP completions
-      keyword_length = 1,
-      max_item_count = 50,
-    },
-    {
-      name = 'luasnip',
-      priority = 750,
-      keyword_length = 2,
-    },
-    {
-      name = 'nvim_lsp_signature_help',
-      priority = 800,
-    },
-    {
-      name = 'path',
-      priority = 300,
-      keyword_length = 2,
-    },
-    {
-      name = 'tailwindcss-colorizer-cmp',
-      priority = 200,
-    },
-  },
+-- Helper function to check if blink.cmp is available
+local function has_blink()
+  return pcall(require, 'blink.cmp')
+end
 
-  -- Enhanced completion behavior
-  completion = {
-    completeopt = 'menu,menuone,noinsert,noselect',
-    keyword_length = 1,
-  },
+-- Language-specific completion tweaks
+if has_blink() then
+  -- blink.cmp handles most of this automatically, but you can add
+  -- file-type specific behavior here if needed
 
-  -- Better formatting for completion items
-  formatting = {
-    format = function(entry, vim_item)
-      -- Add source name to completion items
-      vim_item.menu = ({
-        nvim_lsp = '[LSP]',
-        luasnip = '[Snippet]',
-        path = '[Path]',
-        nvim_lsp_signature_help = '[Signature]',
-        ['tailwindcss-colorizer-cmp'] = '[Color]',
-      })[entry.source.name]
-      return vim_item
+  vim.api.nvim_create_autocmd('FileType', {
+    pattern = { 'php', 'javascript', 'typescript', 'python' },
+    callback = function()
+      -- blink.cmp automatically adjusts to the language
+      -- No additional config needed for basic functionality
     end,
-  },
-
-  -- Enhanced key mappings for better workflow
-  mapping = cmp.mapping.preset.insert {
-    ['<C-n>'] = cmp.mapping.select_next_item { behavior = cmp.SelectBehavior.Insert },
-    ['<C-p>'] = cmp.mapping.select_prev_item { behavior = cmp.SelectBehavior.Insert },
-    ['<C-b>'] = cmp.mapping.scroll_docs(-4),
-    ['<C-f>'] = cmp.mapping.scroll_docs(4),
-    ['<C-Space>'] = cmp.mapping.complete(),
-    ['<C-e>'] = cmp.mapping.abort(),
-    ['<CR>'] = cmp.mapping.confirm {
-      behavior = cmp.ConfirmBehavior.Replace,
-      select = false, -- Only confirm explicitly selected items
-    },
-    ['<Tab>'] = cmp.mapping(function(fallback)
-      if cmp.visible() then
-        cmp.select_next_item()
-      elseif require('luasnip').expand_or_jumpable() then
-        require('luasnip').expand_or_jump()
-      else
-        fallback()
-      end
-    end, { 'i', 's' }),
-    ['<S-Tab>'] = cmp.mapping(function(fallback)
-      if cmp.visible() then
-        cmp.select_prev_item()
-      elseif require('luasnip').jumpable(-1) then
-        require('luasnip').jump(-1)
-      else
-        fallback()
-      end
-    end, { 'i', 's' }),
-  },
-}
-
--- File-type specific completion configurations
-cmp.setup.filetype('php', {
-  sources = cmp.config.sources {
-    { name = 'nvim_lsp', priority = 1000 },
-    { name = 'luasnip', priority = 750 },
-    { name = 'path', priority = 300 },
-  },
-})
-
-cmp.setup.filetype({ 'javascript', 'typescript', 'javascriptreact', 'typescriptreact' }, {
-  sources = cmp.config.sources {
-    { name = 'nvim_lsp', priority = 1000 },
-    { name = 'luasnip', priority = 750 },
-    { name = 'tailwindcss-colorizer-cmp', priority = 600 },
-    { name = 'path', priority = 300 },
-  },
-})
-
-cmp.setup.filetype('python', {
-  sources = cmp.config.sources {
-    { name = 'nvim_lsp', priority = 1000 },
-    { name = 'luasnip', priority = 750 },
-    { name = 'path', priority = 300 },
-  },
-})
+  })
+end
 
 -- ===== ENHANCED LSP CONFIGURATION FOR BETTER COMPLETIONS =====
 
 -- Enhanced LSP capabilities for better autocomplete
-local capabilities = vim.lsp.protocol.make_client_capabilities()
-capabilities = require('cmp_nvim_lsp').default_capabilities(capabilities)
+-- Note: This is handled in your main init.lua with blink.cmp.get_lsp_capabilities()
+-- But we keep this here for reference and any additional tweaks
 
--- Enhanced completion capabilities
+local capabilities = vim.lsp.protocol.make_client_capabilities()
+
+-- blink.cmp provides enhanced capabilities automatically
+if has_blink() then
+  capabilities = require('blink.cmp').get_lsp_capabilities(capabilities)
+end
+
+-- Enhanced completion capabilities (blink handles most of this automatically)
 capabilities.textDocument.completion.completionItem = {
   documentationFormat = { 'markdown', 'plaintext' },
   snippetSupport = true,
@@ -220,21 +137,12 @@ vim.api.nvim_create_autocmd('FileType', {
 
 -- ===== SNIPPET ENHANCEMENTS =====
 
--- Load more language-specific snippets
-require('luasnip.loaders.from_vscode').lazy_load {
-  paths = {
-    -- Add custom snippet paths here
-    vim.fn.stdpath 'config' .. '/snippets',
-  },
-}
+-- blink.cmp has built-in snippet support
+-- If you're using friendly-snippets (which you should keep as a dependency),
+-- blink.cmp will automatically load them
 
--- Enhanced snippet configuration
-local ls = require 'luasnip'
-ls.config.set_config {
-  history = true,
-  updateevents = 'TextChanged,TextChangedI',
-  enable_autosnippets = true,
-}
+-- No need for LuaSnip configuration anymore!
+-- blink.cmp handles snippets internally
 
 -- ===== SMART FORMATTING KEYMAPS =====
 
@@ -266,8 +174,51 @@ vim.api.nvim_create_autocmd('FileType', {
 vim.api.nvim_create_autocmd('FileType', {
   pattern = { 'javascript', 'typescript', 'javascriptreact', 'typescriptreact' },
   callback = function()
-    -- Auto-import on completion
-    vim.keymap.set('n', '<leader>io', '<cmd>TypescriptOrganizeImports<CR>', { buffer = true, desc = 'Organize imports' })
-    vim.keymap.set('n', '<leader>ia', '<cmd>TypescriptAddMissingImports<CR>', { buffer = true, desc = 'Add missing imports' })
+    -- Auto-import on completion (if using typescript-tools)
+    local ts_tools_ok = pcall(require, 'typescript-tools')
+    if ts_tools_ok then
+      vim.keymap.set('n', '<leader>io', '<cmd>TSToolsOrganizeImports<CR>', { buffer = true, desc = 'Organize imports' })
+      vim.keymap.set('n', '<leader>ia', '<cmd>TSToolsAddMissingImports<CR>', { buffer = true, desc = 'Add missing imports' })
+    end
   end,
 })
+
+-- ===== BLINK.CMP SPECIFIC ENHANCEMENTS =====
+
+-- Custom completion behavior for specific languages
+if has_blink() then
+  -- You can add file-type specific completion triggers here
+  vim.api.nvim_create_autocmd('FileType', {
+    pattern = 'php',
+    callback = function()
+      -- PHP-specific completion tweaks
+      -- blink.cmp will automatically handle PHP completions
+    end,
+  })
+
+  vim.api.nvim_create_autocmd('FileType', {
+    pattern = { 'javascript', 'typescript', 'javascriptreact', 'typescriptreact' },
+    callback = function()
+      -- JS/TS-specific completion tweaks
+      -- blink.cmp handles Tailwind CSS classes automatically if configured
+    end,
+  })
+end
+
+-- ===== COMPLETION UI ENHANCEMENTS =====
+
+-- blink.cmp has better defaults, but you can customize the appearance
+-- This is done in your main init.lua in the blink.cmp opts table
+
+-- Example of what you could add to your main init.lua blink.cmp config:
+-- appearance = {
+--   use_nvim_cmp_as_default = true,
+--   nerd_font_variant = 'mono',
+--   kind_icons = {
+--     Text = '󰉿',
+--     Method = '󰊕',
+--     Function = '󰊕',
+--     Constructor = '󰒓',
+--     -- ... more icons
+--   }
+-- }
